@@ -350,10 +350,32 @@
     @media(max-width:400px){
       .frame{width:150px;height:150px;} .bubble{max-width:200px;}
     }
+
+    /* ── music button ───────────────────────── */
+    #music-btn {
+      position:fixed; bottom:28px; right:24px;
+      width:42px; height:42px; border-radius:50%;
+      border:1px solid rgba(200,149,58,.45);
+      background:rgba(0,0,0,.45); backdrop-filter:blur(6px);
+      color:var(--gold); font-size:1.15rem;
+      cursor:pointer; z-index:100;
+      display:flex; align-items:center; justify-content:center;
+      transition:border-color .3s, box-shadow .3s;
+    }
+    #music-btn.playing {
+      border-color:var(--gold);
+      animation:mpulse 2s ease-in-out infinite;
+    }
+    @keyframes mpulse {
+      0%,100%{ box-shadow:0 0 8px rgba(200,149,58,.2); }
+      50%    { box-shadow:0 0 22px rgba(200,149,58,.55); }
+    }
   </style>
 </head>
 <body>
 <canvas id="px"></canvas>
+<audio id="bgm" src="music.mp3" loop autoplay muted preload="auto"></audio>
+<button id="music-btn" title="Toggle music">♪</button>
 
 <!-- nav dots -->
 <div id="dots">
@@ -748,6 +770,55 @@ function startCountdown() {
 
   const sparks = Array.from({length:150},()=>new S(true));
   (function loop(){ cx.clearRect(0,0,W,H); sparks.forEach(s=>{s.step();s.draw();}); requestAnimationFrame(loop); })();
+})();
+
+/* ════════════════════════════════════════
+   BACKGROUND MUSIC
+════════════════════════════════════════ */
+(function(){
+  const audio = document.getElementById('bgm');
+  const btn   = document.getElementById('music-btn');
+  let unmuted = false;
+
+  // Show muted state — music is already running silently
+  btn.textContent = '🔇';
+
+  function fadeIn() {
+    if (audio.volume < 0.85) {
+      audio.volume = Math.min(audio.volume + 0.05, 0.85);
+      setTimeout(fadeIn, 80);
+    }
+  }
+
+  function unmute() {
+    if (unmuted) return;
+    unmuted = true;
+    audio.muted  = false;
+    audio.volume = 0;
+    fadeIn();
+    btn.classList.add('playing');
+    btn.textContent = '♫';
+    document.removeEventListener('click',      unmute);
+    document.removeEventListener('touchstart', unmute);
+  }
+
+  // Unmute on first interaction anywhere
+  document.addEventListener('click',      unmute);
+  document.addEventListener('touchstart', unmute, {passive:true});
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!unmuted) { unmute(); return; }
+    if (audio.paused) {
+      audio.play();
+      btn.classList.add('playing');
+      btn.textContent = '♫';
+    } else {
+      audio.pause();
+      btn.classList.remove('playing');
+      btn.textContent = '♪';
+    }
+  });
 })();
 
 /* ════════════════════════════════════════
